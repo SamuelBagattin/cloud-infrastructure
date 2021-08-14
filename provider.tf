@@ -11,9 +11,9 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "samuel-terraform-states"
+    bucket  = "samuel-terraform-states"
     encrypt = "true"
-    key = "cloud-infrastructure.tfstate"
-    region = "eu-west-3"
+    key     = "cloud-infrastructure.tfstate"
+    region  = "eu-west-3"
   }
 }
