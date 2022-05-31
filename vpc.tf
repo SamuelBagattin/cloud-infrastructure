@@ -14,7 +14,6 @@ locals {
     }
   }
   subnets_ids = [for o in aws_subnet.main : o.id]
-  my_ip       = var.my_ip
 }
 
 resource "aws_default_vpc" "main" {
@@ -98,7 +97,7 @@ resource "aws_default_security_group" "main" {
     from_port   = 0
     protocol    = "-1"
     to_port     = 0
-    cidr_blocks = ["${var.my_ip}/32"]
+    cidr_blocks = ["${local.my_ip}/32"]
   }
   egress {
     description = "To the internet"

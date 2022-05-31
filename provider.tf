@@ -1,6 +1,12 @@
 provider "aws" {
   region = "eu-west-3"
-  token  = var.aws_session_token
+  profile = var.aws_profile
+}
+
+provider "aws" {
+  region  = "us-east-1"
+  alias   = "nvirginia"
+  profile = var.aws_profile
 }
 
 provider "oci" {
@@ -16,11 +22,11 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
     oci = {
-      source  = "SamuelBagattin/oci"
-      version = "4.58.0-2"
+      source  = "oracle/oci"
+      version = "~> 4.0"
     }
   }
   backend "s3" {

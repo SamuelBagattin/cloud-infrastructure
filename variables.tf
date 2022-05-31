@@ -1,10 +1,5 @@
-variable "my_ip" {
-  type = string
-}
-
-variable "aws_session_token" {
+variable "aws_profile" {
   type      = string
-  sensitive = true
 }
 
 variable "oci_tenancy_ocid" {

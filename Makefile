@@ -12,15 +12,15 @@ SRC_DIR ?= $(shell git rev-parse --show-toplevel)
 # prod
 TFVARS ?= $(SRC_DIR)/prod.tfvars
 AWS_PROFILE ?= "samuel"
+SSH_KEY_PATH ?= $(shell $(TERRAFORM) output -raw ssh_private_key_path)
+INSTANCE_PUBLIC_IP ?= $(shell $(TERRAFORM) output -raw instance_ip)
 
-AWS_MFA_SERIAL_NUMBER ?= $(shell aws iam list-mfa-devices --profile $(AWS_PROFILE) | jq -r '.MFADevices[0].SerialNumber')
-SESSION_TOKEN ?= $(shell IFS= read -s  -p Password: pwd && aws sts --profile $(AWS_PROFILE) get-session-token --serial-number $(AWS_MFA_SERIAL_NUMBER) --token-code $$pwd | jq -r '.Credentials.SessionToken')
 IMPORT_RESOURCE_PATH ?= $(shell IFS= read -p ResourcePath: pwd && echo "$$pwd")
 IMPORT_RESOURCE_ID ?= $(shell IFS= read -p ResourceID: pwd && echo "$$pwd")
 
 .PHONY: apply
 apply:
-	cd $(SRC_DIR) && TF_VAR_aws_session_token=$(SESSION_TOKEN) AWS_PROFILE=$(AWS_PROFILE) $(TERRAFORM) apply --var-file=$(TFVARS)
+	cd $(SRC_DIR) && TF_VAR_aws_profile=$(AWS_PROFILE) $(TERRAFORM) apply --var-file=$(TFVARS)
 
 .PHONY: init
 init:
@@ -28,6 +28,7 @@ init:
 
 .PHONY: lint
 lint:
+	cd $(SRC_DIR) && $(TERRAFORM) fmt --recursive
 	cd $(SRC_DIR) && $(TERRAFORM) validate
 	cd $(SRC_DIR) && $(TFLINT) --init  && $(TFLINT) --var-file $(TFVARS)
 	cd $(SRC_DIR) && $(TFSEC) --tfvars-file $(TFVARS)
@@ -35,6 +36,8 @@ lint:
 
 .PHONY: import
 import:
-	cd $(SRC_DIR) && TF_VAR_aws_session_token=$(SESSION_TOKEN) AWS_PROFILE=$(AWS_PROFILE) $(TERRAFORM) import --var-file=$(TFVARS) $(IMPORT_RESOURCE_PATH) $(IMPORT_RESOURCE_ID)
+	cd $(SRC_DIR) && TF_VAR_aws_profile=$(AWS_PROFILE) $(TERRAFORM) import --var-file=$(TFVARS) $(IMPORT_RESOURCE_PATH) $(IMPORT_RESOURCE_ID)
 
-
+.PHONY: ssh
+ssh:
+	ssh -i $(SSH_KEY_PATH) opc@$(INSTANCE_PUBLIC_IP)
