@@ -1,5 +1,17 @@
 provider "aws" {
-  region = "eu-west-3"
+  region  = local.current_region
+  profile = var.aws_profile
+}
+
+provider "aws" {
+  region  = "eu-west-3"
+  alias = "paris"
+  profile = var.aws_profile
+}
+
+provider "aws" {
+  region  = "eu-west-1"
+  alias   = "ireland"
   profile = var.aws_profile
 }
 

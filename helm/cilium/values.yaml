@@ -1,0 +1,12 @@
+cilium:
+  name: cilium
+  operator:
+    enabled: true
+    replicas: 1
+  hubble:
+    enabled: false
+    relay:
+      enabled: false
+      replicas: 1
+    ui:
+      enabled: false

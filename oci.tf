@@ -13,21 +13,42 @@ data "http" "my_ip" {
 }
 
 locals {
-  oci_compartment_id = "ocid1.tenancy.oc1..aaaaaaaao4yh474jk2xmszte4ksyy7ghnjhna2eqsdfkuxdcbcfkjulxd6iq"
-  my_ip = jsondecode(data.http.my_ip.body)["ip"]
-  cloudfront_ip_range = toset(sort(concat(jsondecode(data.http.cloudfront_ip_list.body)["CLOUDFRONT_GLOBAL_IP_LIST"],jsondecode(data.http.cloudfront_ip_list.body)["CLOUDFRONT_REGIONAL_EDGE_IP_LIST"])))
-  chunked_cloudfront_ip_range = chunklist(local.cloudfront_ip_range,120)
+  oci_compartment_id          = "ocid1.tenancy.oc1..aaaaaaaao4yh474jk2xmszte4ksyy7ghnjhna2eqsdfkuxdcbcfkjulxd6iq"
+  my_ip                       = jsondecode(data.http.my_ip.body)["ip"]
+  cloudfront_ip_range         = toset(sort(concat(jsondecode(data.http.cloudfront_ip_list.body)["CLOUDFRONT_GLOBAL_IP_LIST"], jsondecode(data.http.cloudfront_ip_list.body)["CLOUDFRONT_REGIONAL_EDGE_IP_LIST"])))
+  chunked_cloudfront_ip_range = chunklist(local.cloudfront_ip_range, 120)
+  cloudfront_dns_names        = ["grafana.samuelbagattin.com", "echo.samuelbagattin.com", "influxdb.samuelbagattin.com", "hubble.samuelbagattin.com"]
 }
 
-data "oci_core_vcn" "default" {
-  vcn_id = "ocid1.vcn.oc1.eu-frankfurt-1.amaaaaaai365xjyaybclzne6olhwukqnfgag2k6lmzn4qsvkitytd5v2knuq"
+resource "oci_core_vcn" "main" {
+  compartment_id = local.oci_compartment_id
+  cidr_block     = "172.16.0.0/16"
+  display_name   = "main"
+  dns_label      = "main"
 }
 resource "oci_core_subnet" "main" {
-  cidr_block     = "10.0.0.0/24"
-  compartment_id = local.oci_compartment_id
-  vcn_id         = data.oci_core_vcn.default.id
-  security_list_ids = flatten([oci_core_security_list.from_cloudfront[*].id])
+  cidr_block        = "172.16.0.0/24"
+  compartment_id    = local.oci_compartment_id
+  vcn_id            = oci_core_vcn.main.id
+  security_list_ids = flatten([oci_core_security_list.from_cloudfront[*].id, oci_core_security_list.from_me.id])
+  route_table_id    = oci_core_route_table.main.id
 }
+resource "oci_core_internet_gateway" "main" {
+  compartment_id = local.oci_compartment_id
+  vcn_id         = oci_core_vcn.main.id
+  display_name   = "main"
+}
+resource "oci_core_route_table" "main" {
+  compartment_id = local.oci_compartment_id
+  vcn_id         = oci_core_vcn.main.id
+  display_name   = "main"
+  route_rules {
+    network_entity_id = oci_core_internet_gateway.main.id
+    destination_type  = "CIDR_BLOCK"
+    destination       = "0.0.0.0/0"
+  }
+}
+
 
 data "oci_core_image" "default" {
   image_id = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaakkun23rbrjkobpjo4hnewajqqvfhuyqzbk2mzj3uqhoavnuwhcpq"
@@ -35,16 +56,16 @@ data "oci_core_image" "default" {
 
 resource "oci_core_instance" "instance" {
   availability_domain = "MtQI:EU-FRANKFURT-1-AD-3"
-  compartment_id = oci_core_subnet.main.compartment_id
+  compartment_id      = oci_core_subnet.main.compartment_id
   shape               = "VM.Standard.A1.Flex"
   shape_config {
     memory_in_gbs = 24
-    ocpus = 4
+    ocpus         = 4
   }
   create_vnic_details {
     skip_source_dest_check = true
     subnet_id              = oci_core_subnet.main.id
-    nsg_ids = []
+    nsg_ids                = []
   }
 
   metadata = {
@@ -52,7 +73,7 @@ resource "oci_core_instance" "instance" {
   }
 
   source_details {
-    source_id = data.oci_core_image.default.id
+    source_id   = data.oci_core_image.default.id
     source_type = "image"
   }
 
@@ -89,9 +110,9 @@ resource "oci_core_instance" "instance" {
 }
 
 resource "oci_core_security_list" "from_cloudfront" {
-  count = length(local.chunked_cloudfront_ip_range)
-  compartment_id = data.oci_core_vcn.default.compartment_id
-  vcn_id         = data.oci_core_vcn.default.id
+  count          = length(local.chunked_cloudfront_ip_range)
+  compartment_id = oci_core_vcn.main.compartment_id
+  vcn_id         = oci_core_vcn.main.id
 
   egress_security_rules {
     destination      = "0.0.0.0/0"
@@ -104,10 +125,10 @@ resource "oci_core_security_list" "from_cloudfront" {
     for_each = local.chunked_cloudfront_ip_range[count.index]
     iterator = cidr
     content {
-      protocol = "6"
-      source = cidr.value
+      protocol    = "6"
+      source      = cidr.value
       source_type = "CIDR_BLOCK"
-      stateless = false
+      stateless   = false
       tcp_options {
         max = 80
         min = 80
@@ -117,8 +138,8 @@ resource "oci_core_security_list" "from_cloudfront" {
 }
 
 resource "oci_core_security_list" "from_me" {
-  compartment_id = oci_core_subnet.main.compartment_id
-  vcn_id         = oci_core_subnet.main.vcn_id
+  compartment_id = local.oci_compartment_id
+  vcn_id         = oci_core_vcn.main.id
 
   egress_security_rules {
     destination      = "0.0.0.0/0"
@@ -128,35 +149,36 @@ resource "oci_core_security_list" "from_me" {
   }
 
   ingress_security_rules {
-    protocol = "all"
-    source   = "${local.my_ip}/32"
-    stateless = false
+    protocol    = "all"
+    source_type = "CIDR_BLOCK"
+    source      = "0.0.0.0/0"
+    stateless   = false
   }
 }
 
 resource "aws_cloudfront_distribution" "oci_instance" {
   enabled = true
   default_cache_behavior {
-    allowed_methods        = [ "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT" ]
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "oci-instance"
     viewer_protocol_policy = "redirect-to-https"
-    max_ttl = 0
+    max_ttl                = 0
     forwarded_values {
       query_string = true
-      headers = ["*"]
+      headers      = ["*"]
       cookies {
         forward = "all"
       }
     }
   }
-  aliases = ["test.samuelbagattin.com"]
+  aliases = local.cloudfront_dns_names
   origin {
     domain_name = aws_route53_record.samuelbagattin_com["oci.samuelbagattin.com"].name
     origin_id   = "oci-instance"
     custom_origin_config {
-      http_port              = 80
-      https_port             = 443
+      http_port              = 32080
+      https_port             = 32443
       origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
@@ -168,14 +190,26 @@ resource "aws_cloudfront_distribution" "oci_instance" {
   }
   viewer_certificate {
     acm_certificate_arn = data.aws_acm_certificate.samuelbagattin.arn
-    ssl_support_method = "sni-only"
+    ssl_support_method  = "sni-only"
   }
 }
 
-resource "aws_route53_record" "oci_instance" {
-  name    = "test.samuelbagattin.com"
-  type    = "A"
-  zone_id = aws_route53_zone.samuelbagattin_com.id
+resource "aws_route53_record" "cloudfront_oci_A" {
+  for_each = { for v in local.cloudfront_dns_names : v => v }
+  name     = each.value
+  type     = "A"
+  zone_id  = aws_route53_zone.samuelbagattin_com.id
+  alias {
+    evaluate_target_health = false
+    name                   = aws_cloudfront_distribution.oci_instance.domain_name
+    zone_id                = aws_cloudfront_distribution.oci_instance.hosted_zone_id
+  }
+}
+resource "aws_route53_record" "cloudfront_oci_AAAA" {
+  for_each = { for v in local.cloudfront_dns_names : v => v }
+  name     = each.value
+  type     = "AAAA"
+  zone_id  = aws_route53_zone.samuelbagattin_com.id
   alias {
     evaluate_target_health = false
     name                   = aws_cloudfront_distribution.oci_instance.domain_name

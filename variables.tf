@@ -1,5 +1,5 @@
 variable "aws_profile" {
-  type      = string
+  type = string
 }
 
 variable "oci_tenancy_ocid" {

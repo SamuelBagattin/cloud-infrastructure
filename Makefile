@@ -18,6 +18,10 @@ INSTANCE_PUBLIC_IP ?= $(shell $(TERRAFORM) output -raw instance_ip)
 IMPORT_RESOURCE_PATH ?= $(shell IFS= read -p ResourcePath: pwd && echo "$$pwd")
 IMPORT_RESOURCE_ID ?= $(shell IFS= read -p ResourceID: pwd && echo "$$pwd")
 
+.PHONY: login
+login:
+	$(AWS) sso login --profile $(AWS_PROFILE)
+
 .PHONY: apply
 apply:
 	cd $(SRC_DIR) && TF_VAR_aws_profile=$(AWS_PROFILE) $(TERRAFORM) apply --var-file=$(TFVARS)

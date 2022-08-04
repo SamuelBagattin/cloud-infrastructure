@@ -4,10 +4,6 @@ locals {
       type : "A",
       value : oci_core_instance.instance.public_ip
     }
-    "apiserver.cluster.samuelbagattin.com" = {
-      type : "A",
-      value : oci_core_instance.instance.public_ip
-    }
   }
 }
 
@@ -20,8 +16,8 @@ resource "aws_route53_record" "samuelbagattin_com" {
   name     = each.key
   type     = each.value.type
   zone_id  = aws_route53_zone.samuelbagattin_com.id
-  records = [each.value.value]
-  ttl = "60"
+  records  = [each.value.value]
+  ttl      = "60"
 }
 
 data "aws_acm_certificate" "samuelbagattin" {
