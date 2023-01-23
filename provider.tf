@@ -1,6 +1,11 @@
 provider "aws" {
   region  = local.current_region
   profile = var.aws_profile
+  default_tags {
+    tags = {
+      git-repository: "cloud-infrastructure"
+    }
+  }
 }
 
 provider "aws" {
