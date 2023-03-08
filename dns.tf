@@ -9,6 +9,7 @@ locals {
 
 resource "aws_route53_zone" "samuelbagattin_com" {
   name = "samuelbagattin.com"
+
 }
 
 resource "aws_route53_record" "samuelbagattin_com" {
@@ -23,4 +24,9 @@ resource "aws_route53_record" "samuelbagattin_com" {
 data "aws_acm_certificate" "samuelbagattin" {
   domain   = "samuelbagattin.com"
   provider = aws.nvirginia
+}
+
+resource "cloudflare_zone" "samuelbagattin-com" {
+  zone = "samuelbagattin.com"
+  jump_start = false
 }

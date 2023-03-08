@@ -247,7 +247,7 @@ resource "oci_core_network_security_group" "instance" {
   vcn_id         = oci_core_vcn.main.id
   display_name = "instance"
 }
-/*
+
 resource "oci_core_network_security_group_security_rule" "http" {
   direction                 = "INGRESS"
   network_security_group_id = oci_core_network_security_group.instance.id
@@ -275,7 +275,7 @@ resource "oci_core_network_security_group_security_rule" "https" {
     }
   }
 }
-*/
+
 resource "oci_core_network_security_group" "vpn_server" {
   compartment_id = local.oci_compartment_id
   vcn_id         = oci_core_vcn.main.id
@@ -351,6 +351,15 @@ resource "aws_cloudfront_distribution" "oci_instance" {
     ssl_support_method  = "sni-only"
   }
   http_version = "http2and3"
+}
+
+resource "cloudflare_record" "oci_A" {
+  for_each = { for v in local.cloudfront_dns_names : v => v }
+  name    = each.value
+  type    = "A"
+  zone_id = cloudflare_zone.samuelbagattin-com.id
+  proxied = true
+  value = oci_core_instance.instance.public_ip
 }
 
 resource "aws_route53_record" "cloudfront_oci_A" {

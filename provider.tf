@@ -34,6 +34,10 @@ provider "oci" {
   fingerprint      = var.oci_fingerprint
 }
 
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
 terraform {
   required_version = ">=1"
   required_providers {
@@ -44,6 +48,10 @@ terraform {
     oci = {
       source  = "oracle/oci"
       version = "~> 4.0"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 3.0"
     }
   }
   backend "s3" {

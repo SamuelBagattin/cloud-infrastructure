@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  login:
+    cmds:
+      - aws sso login
+    env:
+      AWS_PROFILE: samuel
+  init:
+    cmds:
+      - terraform init --backend-config profile=$AWS_PROFILE
+    env :
+      AWS_PROFILE: samuel
