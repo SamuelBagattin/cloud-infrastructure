@@ -1,6 +1,6 @@
 module "aws_github_actions_oidc" {
   source  = "SamuelBagattin/github-oidc-provider/aws"
-  version = "0.4.0"
+  version = "0.12.0"
   permissions = {
     "SamuelBagattin" : {
       role_name = "githubActions-role"
