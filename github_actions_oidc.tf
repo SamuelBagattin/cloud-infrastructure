@@ -1,5 +1,5 @@
 module "aws_github_actions_oidc" {
-  source  = "registry.terraform.io/SamuelBagattin/github-oidc-provider/aws"
+  source  = "git::https://github.com/samuelbagattin/terraform-aws-github-oidc-provider?ref=feat/oidc_dynamic_fingerprint"
   permissions = {
     "samuelbagattin" : {
       role_name = "githubActions-role"
