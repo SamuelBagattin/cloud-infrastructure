@@ -15,7 +15,7 @@ env:
   TF_IN_AUTOMATION: "true"
 
 jobs:
-  apply:
+  plan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: cloud-infrastructure-apply
+          role-session-name: cloud-infrastructure-plan
           aws-region: ${{ env.AWS_REGION }}
       - name: Install tfenv
         run: |
@@ -33,8 +33,8 @@ jobs:
         run: |
           tfenv install
           terraform --version
-      - name: apply
-        run: terraform init && terraform apply
+      - name: plan
+        run: terraform init && terraform plan
   apply:
     runs-on: ubuntu-latest
     environment: infra
