@@ -3,14 +3,14 @@ provider "aws" {
   profile = var.aws_profile
   default_tags {
     tags = {
-      git-repository: "cloud-infrastructure"
+      git-repository : "cloud-infrastructure"
     }
   }
 }
 
 provider "aws" {
   region  = "eu-west-3"
-  alias = "paris"
+  alias   = "paris"
   profile = var.aws_profile
 }
 
@@ -26,16 +26,38 @@ provider "aws" {
   profile = var.aws_profile
 }
 
+data "aws_ssm_parameter" "cloudflare_token" {
+  name            = "/cloudflare/api/token"
+  with_decryption = true
+}
+
+data "aws_ssm_parameter" "oci_tenancy_ocid" {
+  name            = "/oci/tenancy/ocid"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "oci_private_key" {
+  name            = "/oci/private_key"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "oci_user_ocid" {
+  name            = "/oci/user/ocid"
+  with_decryption = true
+}
+data "aws_ssm_parameter" "oci_fingerprint" {
+  name            = "/oci/fingerprint"
+  with_decryption = true
+}
+
 provider "oci" {
-  region           = "eu-frankfurt-1"
-  private_key_path = var.oci_private_key_path
-  tenancy_ocid     = var.oci_tenancy_ocid
-  user_ocid        = var.oci_user_ocid
-  fingerprint      = var.oci_fingerprint
+  region       = "eu-frankfurt-1"
+  private_key = data.aws_ssm_parameter.oci_private_key.value
+  tenancy_ocid = data.aws_ssm_parameter.oci_tenancy_ocid.value
+  user_ocid    = data.aws_ssm_parameter.oci_user_ocid.value
+  fingerprint  = data.aws_ssm_parameter.oci_fingerprint.value
 }
 
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+  api_token = data.aws_ssm_parameter.cloudflare_token.value
 }
 
 terraform {
