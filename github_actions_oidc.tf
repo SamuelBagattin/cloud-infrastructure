@@ -3,7 +3,7 @@ module "aws_github_actions_oidc" {
   permissions = {
     "samuelbagattin" : {
       role_name = "githubActions-role"
-      allowed_branches = ["main","feat/*"]
+      allowed_branches = ["*"]
       repositories = {
         "cloud-infrastructure" = {}
         "urlite" = {}
@@ -12,13 +12,9 @@ module "aws_github_actions_oidc" {
   }
 }
 
-resource "aws_iam_policy_attachment" "githubactions_admin" {
-  name       = "githubactions-role-admin"
+resource "aws_iam_role_policy_attachment" "test-attach" {
+  role       = "githubActions-role"
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-  roles = [
-    "githubActions-role"
-  ]
-  depends_on = [module.aws_github_actions_oidc]
 }
 
 resource "aws_ssm_parameter" "github_actions_oidc_provider_arn" {
