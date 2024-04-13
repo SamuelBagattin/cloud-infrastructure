@@ -12,6 +12,7 @@ on:
 
 env:
   AWS_REGION: eu-west-1
+  TF_IN_AUTOMATION: "true"
 
 jobs:
   plan:
