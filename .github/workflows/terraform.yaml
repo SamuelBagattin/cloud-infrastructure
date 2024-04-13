@@ -38,6 +38,8 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     environment: infra
+    needs:
+      - plan
     steps:
       - uses: actions/checkout@v4
       - name: configure aws credentials
