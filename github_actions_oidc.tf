@@ -6,7 +6,6 @@ module "aws_github_actions_oidc" {
       allowed_branches = ["*"]
       repositories = {
         "cloud-infrastructure" = {}
-        "urlite" = {}
       }
     }
   }
