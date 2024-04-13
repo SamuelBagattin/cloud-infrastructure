@@ -14,7 +14,7 @@ locals {
   my_ip                       = chomp(data.http.myip.response_body)
   cloudfront_ip_range         = toset(sort(concat(jsondecode(data.http.cloudfront_ip_list.response_body)["CLOUDFRONT_GLOBAL_IP_LIST"], jsondecode(data.http.cloudfront_ip_list.response_body)["CLOUDFRONT_REGIONAL_EDGE_IP_LIST"])))
   chunked_cloudfront_ip_range = chunklist(local.cloudfront_ip_range, 120)
-  cloudfront_dns_names        = ["grafana.samuelbagattin.com", "echo.samuelbagattin.com", "influxdb.samuelbagattin.com", "trino.samuelbagattin.com","superset.samuelbagattin.com","elasticsearch.samuelbagattin.com", "kibana.samuelbagattin.com", "enterprise-search.samuelbagattin.com"]
+  cloudfront_dns_names        = []
   ports_configuration = {
     nginx_ingress_controller_http  = 32080
     nginx_ingress_controller_https = 32443
@@ -30,21 +30,24 @@ resource "oci_core_vcn" "main" {
   display_name   = "main"
   dns_label      = "main"
 }
+
 resource "oci_core_subnet" "main" {
-  display_name = "main"
-  cidr_block        = "172.16.0.0/24"
-  compartment_id    = local.oci_compartment_id
-  vcn_id            = oci_core_vcn.main.id
+  display_name   = "main"
+  cidr_block     = "172.16.0.0/24"
+  compartment_id = local.oci_compartment_id
+  vcn_id         = oci_core_vcn.main.id
   security_list_ids = [
     oci_core_security_list.from_me.id
   ]
-  route_table_id    = oci_core_route_table.main.id
+  route_table_id = oci_core_route_table.main.id
 }
+
 resource "oci_core_internet_gateway" "main" {
   compartment_id = local.oci_compartment_id
   vcn_id         = oci_core_vcn.main.id
   display_name   = "main"
 }
+
 resource "oci_core_route_table" "main" {
   compartment_id = local.oci_compartment_id
   vcn_id         = oci_core_vcn.main.id
@@ -66,7 +69,7 @@ data "oci_core_image" "vpn_server" {
 }
 
 resource "oci_core_instance" "instance" {
-  display_name = "instance"
+  display_name        = "instance"
   availability_domain = "MtQI:EU-FRANKFURT-1-AD-3"
   compartment_id      = oci_core_subnet.main.compartment_id
   shape               = "VM.Standard.A1.Flex"
@@ -121,7 +124,7 @@ resource "oci_core_instance" "instance" {
   }
 }
 resource "oci_core_instance" "vpn_server" {
-  display_name = "vpn-server"
+  display_name        = "vpn-server"
   availability_domain = "MtQI:EU-FRANKFURT-1-AD-2"
   compartment_id      = oci_core_subnet.main.compartment_id
   shape               = "VM.Standard.E2.1.Micro"
@@ -245,7 +248,7 @@ resource "oci_core_security_list" "from_me" {
 resource "oci_core_network_security_group" "instance" {
   compartment_id = local.oci_compartment_id
   vcn_id         = oci_core_vcn.main.id
-  display_name = "instance"
+  display_name   = "instance"
 }
 
 resource "oci_core_network_security_group_security_rule" "http" {
@@ -253,7 +256,7 @@ resource "oci_core_network_security_group_security_rule" "http" {
   network_security_group_id = oci_core_network_security_group.instance.id
   protocol                  = "6"
   source                    = "0.0.0.0/0"
-  stateless = false
+  stateless                 = false
   tcp_options {
     destination_port_range {
       max = local.ports_configuration.nginx_ingress_controller_http
@@ -267,7 +270,7 @@ resource "oci_core_network_security_group_security_rule" "https" {
   network_security_group_id = oci_core_network_security_group.instance.id
   protocol                  = "6"
   source                    = "0.0.0.0/0"
-  stateless = false
+  stateless                 = false
   tcp_options {
     destination_port_range {
       max = local.ports_configuration.nginx_ingress_controller_https
@@ -279,7 +282,7 @@ resource "oci_core_network_security_group_security_rule" "https" {
 resource "oci_core_network_security_group" "vpn_server" {
   compartment_id = local.oci_compartment_id
   vcn_id         = oci_core_vcn.main.id
-  display_name = "vpn_server"
+  display_name   = "vpn_server"
 }
 
 resource "oci_core_network_security_group_security_rule" "openvpn" {
@@ -287,7 +290,7 @@ resource "oci_core_network_security_group_security_rule" "openvpn" {
   network_security_group_id = oci_core_network_security_group.vpn_server.id
   protocol                  = "6"
   source                    = "0.0.0.0/0"
-  stateless = false
+  stateless                 = false
   tcp_options {
     destination_port_range {
       max = local.ports_configuration.openvpn
@@ -301,7 +304,7 @@ resource "oci_core_network_security_group_security_rule" "openvpn_ui" {
   network_security_group_id = oci_core_network_security_group.vpn_server.id
   protocol                  = "6"
   source                    = "0.0.0.0/0"
-  stateless = false
+  stateless                 = false
   tcp_options {
     destination_port_range {
       max = local.ports_configuration.openvpn_ui
@@ -332,7 +335,7 @@ resource "aws_cloudfront_distribution" "oci_instance" {
   }
   aliases = local.cloudfront_dns_names
   origin {
-    domain_name = aws_route53_record.samuelbagattin_com["oci.samuelbagattin.com"].name
+    domain_name = "oci.samuelbagattin.com"
     origin_id   = "oci-instance"
     custom_origin_config {
       http_port              = 32080
@@ -351,15 +354,6 @@ resource "aws_cloudfront_distribution" "oci_instance" {
     ssl_support_method  = "sni-only"
   }
   http_version = "http2and3"
-}
-
-resource "cloudflare_record" "oci_A" {
-  for_each = { for v in local.cloudfront_dns_names : v => v }
-  name    = each.value
-  type    = "A"
-  zone_id = cloudflare_zone.samuelbagattin-com.id
-  proxied = true
-  value = oci_core_instance.instance.public_ip
 }
 
 resource "aws_route53_record" "cloudfront_oci_A" {

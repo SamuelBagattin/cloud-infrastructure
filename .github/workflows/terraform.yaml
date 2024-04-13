@@ -1,0 +1,29 @@
+name: Terraform
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  AWS_REGION: eu-west-1
+  AWS_PROFILE: samuel
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: cloud-infrastructure-${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install TFENV & Terraform
+        run: git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv && ~/.tfenv/tfenv install && ~/.tfenv/tfenv use

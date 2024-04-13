@@ -1,15 +1,10 @@
 locals {
   dns_records = {
-    "oci.samuelbagattin.com" = {
-      type : "A",
-      value : oci_core_instance.instance.public_ip
-    }
   }
 }
 
 resource "aws_route53_zone" "samuelbagattin_com" {
   name = "samuelbagattin.com"
-
 }
 
 resource "aws_route53_record" "samuelbagattin_com" {
@@ -26,7 +21,14 @@ data "aws_acm_certificate" "samuelbagattin" {
   provider = aws.nvirginia
 }
 
-resource "cloudflare_zone" "samuelbagattin-com" {
-  zone = "samuelbagattin.com"
-  jump_start = false
+data "aws_ssm_parameter" "cloudflare_account_id" {
+  name = "/cloudflare/account/id"
+  with_decryption = true
 }
+
+resource "cloudflare_zone" "samuelbagattin-com" {
+  zone       = "samuelbagattin.com"
+  jump_start = false
+  account_id = data.aws_ssm_parameter.cloudflare_account_id.value
+}
+
