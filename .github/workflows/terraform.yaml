@@ -33,4 +33,4 @@ jobs:
           tfenv install
           terraform --version
       - name: Plan
-        run: make init && make plan
+        run: terraform init && terraform plan
