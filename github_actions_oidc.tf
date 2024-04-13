@@ -1,9 +1,11 @@
 module "aws_github_actions_oidc" {
-  source  = "git::https://github.com/samuelbagattin/terraform-aws-github-oidc-provider?ref=feat/oidc_dynamic_fingerprint"
+  source  = "SamuelBagattin/github-oidc-provider/aws"
+  version = "0.4.0"
   permissions = {
     "SamuelBagattin" : {
       role_name = "githubActions-role"
       allowed_branches = ["*"]
+      pull_requests = true
       repositories = {
         "cloud-infrastructure" = {}
       }
