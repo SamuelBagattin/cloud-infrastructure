@@ -24,5 +24,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: cloud-infrastructure-plan
           aws-region: ${{ env.AWS_REGION }}
-      - name: Install TFENV & Terraform
-        run: git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv && ~/.tfenv/tfenv install && ~/.tfenv/tfenv use
+      - name: Install tfenv
+        run: |
+          git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+      - name: Install Terraform
+        run: |
+          tfenv install
+          terraform --version
