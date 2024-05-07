@@ -1,19 +1,6 @@
-data "http" "cloudfront_ip_list" {
-  url = "https://d7uri8nf7uskq.cloudfront.net/tools/list-cloudfront-ips"
-  request_headers = {
-    "Accept" = "application/json"
-  }
-}
-
-data "http" "myip" {
-  url = "https://ipv4.icanhazip.com"
-}
 
 locals {
   oci_compartment_id          = "ocid1.tenancy.oc1..aaaaaaaao4yh474jk2xmszte4ksyy7ghnjhna2eqsdfkuxdcbcfkjulxd6iq"
-  my_ip                       = chomp(data.http.myip.response_body)
-  cloudfront_ip_range         = toset(sort(concat(jsondecode(data.http.cloudfront_ip_list.response_body)["CLOUDFRONT_GLOBAL_IP_LIST"], jsondecode(data.http.cloudfront_ip_list.response_body)["CLOUDFRONT_REGIONAL_EDGE_IP_LIST"])))
-  chunked_cloudfront_ip_range = chunklist(local.cloudfront_ip_range, 120)
   cloudfront_dns_names        = []
   ports_configuration = {
     nginx_ingress_controller_http  = 32080
@@ -367,6 +354,7 @@ resource "aws_route53_record" "cloudfront_oci_A" {
     zone_id                = aws_cloudfront_distribution.oci_instance.hosted_zone_id
   }
 }
+
 resource "aws_route53_record" "cloudfront_oci_AAAA" {
   for_each = { for v in local.cloudfront_dns_names : v => v }
   name     = each.value

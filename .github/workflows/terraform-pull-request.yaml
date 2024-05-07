@@ -1,0 +1,41 @@
+name: Terraform PR
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+on:
+  pull_request:
+    branches:
+      - master
+
+
+env:
+  AWS_REGION: eu-west-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: cloud-infrastructure-plan
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Install tfenv
+        run: |
+          git clone https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+      - name: Install Terraform
+        run: |
+          tfenv install
+          terraform --version
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4.0.0
+      - name: Init
+        run: terraform init
+      - name: Tflint
+        run: tflint --init && tflint
+      - name: Plan
+        run: terraform plan
