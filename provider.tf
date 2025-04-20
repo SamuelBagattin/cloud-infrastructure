@@ -60,6 +60,12 @@ provider "cloudflare" {
   api_token = data.aws_ssm_parameter.cloudflare_token.value
 }
 
+provider "scaleway" {
+  profile         = "samuel"
+  zone            = "fr-par-1"
+  region          = "fr-par"
+}
+
 terraform {
   required_version = ">=1"
   required_providers {
@@ -74,6 +80,10 @@ terraform {
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 4.0"
+    }
+    scaleway = {
+      source  = "scaleway/scaleway"
+      version = "~> 2.0"
     }
   }
   backend "s3" {
